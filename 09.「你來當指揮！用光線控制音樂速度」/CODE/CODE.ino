@@ -1,67 +1,71 @@
-// === 腳位定義 ===
-const int buzzer = 9;         // 蜂鳴器接在數位腳位 D9
-const int ldrPin = A0;        // 光敏電阻接在類比腳位 A0
+// 腳位設定
+#define BUZZER_PIN   9     // 蜂鳴器腳位
+#define LDR_PIN      A0    // 光敏電阻腳位
 
-// === 音符頻率陣列（Hz）===
-// 這是一段旋律的主旋律頻率
+// 音符頻率定義（C 大調）
+#define NOTE_C4  262
+#define NOTE_D4  294
+#define NOTE_E4  330
+#define NOTE_F4  349
+#define NOTE_G4  392
+#define NOTE_A4  440
+#define NOTE_B4  494
+#define NOTE_C5  523
+
+// 播放速度控制範圍（單位：ms）
+#define TEMPO_FAST   100   // 最快節奏（光很亮）
+#define TEMPO_SLOW   800   // 最慢節奏（光很暗）
+
 int melody[] = {
-  294, 330, 370, 330, 294, 262, 294, 330,
-  370, 330, 294, 262, 220, 294, 330, 294,
-  262, 247, 220, 262, 294, 262, 220, 196,
-  220, 247, 262, 247, 220, 196, 220, 247,
-  262, 247, 220, 196, 175, 220, 247, 220,
-  196, 185, 175, 196, 220, 196, 175, 165,
-  196, 220, 247, 220, 196, 175, 196, 220,
-  247, 220, 196, 175, 165, 196, 220, 196,
-  175, 165, 147, 175, 196, 175, 147, 131
+  NOTE_E4, NOTE_E4, NOTE_F4, NOTE_G4,
+  NOTE_G4, NOTE_F4, NOTE_E4, NOTE_D4,
+  NOTE_C4, NOTE_C4, NOTE_D4, NOTE_E4,
+  NOTE_E4, NOTE_D4, NOTE_D4,
+
+  NOTE_E4, NOTE_E4, NOTE_F4, NOTE_G4,
+  NOTE_G4, NOTE_F4, NOTE_E4, NOTE_D4,
+  NOTE_C4, NOTE_C4, NOTE_D4, NOTE_E4,
+  NOTE_D4, NOTE_C4, NOTE_C4
 };
 
-// === 音符對應的節奏時值（單位：毫秒）===
-// 每個音符持續的時間，需與 melody[] 對應
-int durations[] = {
-  300, 300, 300, 300, 300, 300, 300, 300,
-  300, 300, 300, 500, 300, 300, 300, 300,
-  300, 300, 300, 300, 300, 300, 300, 500,
-  300, 300, 300, 300, 300, 300, 300, 300,
-  300, 300, 300, 500, 300, 300, 300, 300,
-  300, 300, 300, 300, 300, 300, 300, 500,
-  300, 300, 300, 300, 300, 300, 300, 300,
-  300, 300, 300, 500, 300, 300, 300, 300,
-  300, 300, 300, 300, 300, 300, 300, 500
-};
+int noteDurations[] = {
+  4, 4, 4, 4,
+  4, 4, 4, 4,
+  4, 4, 4, 4,
+  4, 2, 2,
 
-// 計算總共有多少個音符
-int noteCount = sizeof(melody) / sizeof(melody[0]);
+  4, 4, 4, 4,
+  4, 4, 4, 4,
+  4, 4, 4, 4,
+  4, 2, 2
+};
 
 void setup() {
-  pinMode(buzzer, OUTPUT);      // 將 buzzer 腳位設為輸出
-  Serial.begin(9600);           // 啟動序列監看器，用於除錯與觀察
+  pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(LDR_PIN, INPUT);
+  Serial.begin(9600);  // 若需觀察光線數值
 }
 
 void loop() {
-  // 使用 for 迴圈依序播放所有音符
-  for (int i = 0; i < noteCount; i++) {
-    int lightVal = analogRead(ldrPin);  // 讀取光敏電阻的數值（範圍：0~1023）
+  int length = sizeof(melody) / sizeof(int);
 
-    // 使用 map() 根據光線強度調整 tempo，光越亮 → 速度越快
-    int tempo = map(lightVal, 0, 1023, durations[i] * 2, durations[i] / 2);
+  for (int i = 0; i < length; i++) {
+    int lightValue = analogRead(LDR_PIN);  // 讀取 LDR 值（0~1023）
 
-    // 在序列埠輸出目前播放的音符與速度資訊
-    Serial.print("Note ");
-    Serial.print(i);
-    Serial.print(": ");
-    Serial.print(melody[i]);
-    Serial.print(" Hz | Tempo: ");
-    Serial.println(tempo);
+    // 根據光線值對應節奏（越亮越快）
+    int tempo = map(lightValue, 0, 1023, TEMPO_FAST, TEMPO_SLOW);
 
-    // 使用 tone() 播放蜂鳴器指定頻率
-    tone(buzzer, melody[i]);
-    delay(tempo);               // 播放時間依照光敏電阻決定
+    int duration = tempo * 4 / noteDurations[i];
 
-    // 停止發聲
-    noTone(buzzer);
-    delay(tempo / 4);           // 加入短暫停頓使節奏更自然
+    Serial.print("LDR: ");
+    Serial.print(lightValue);
+    Serial.print(" → Tempo: ");
+    Serial.println(duration);
+
+    tone(BUZZER_PIN, melody[i], duration);
+    delay(duration * 1.3);  // 節奏間隔
+    noTone(BUZZER_PIN);
   }
 
-  delay(1500);                  // 播完全部音符後暫停 1.5 秒再重複播放
+  delay(2000);  // 播完休息 2 秒再重播
 }
