@@ -14,6 +14,10 @@ void setup() {
 }
 
 void loop() {
+
+}
+
+void aaa(){
   // 第一段：LED從左到右再從右到左流動，重複3次
   for (int j = 0; j < 3; j++) {
     // 左到右亮滅
@@ -33,6 +37,7 @@ void loop() {
     // 由外向中間收回亮
     symmetricPattern(false);
   }
+
 }
 
 // ✅ 封裝通用的 LED 閃爍函式
